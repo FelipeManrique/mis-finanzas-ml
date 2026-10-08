@@ -1598,6 +1598,7 @@
     pulling = true;
     try {
       const f = drive.fileId ? { id: drive.fileId } : await findFile(MAIN_FILE);
+      if (!f) scheduleSync(300);
       if (f) {
         const meta = await gfetch('GET', `${API}/${f.id}?fields=id,modifiedTime`);
         drive.fileId = meta.id;
@@ -1760,6 +1761,7 @@
           <p class="footnote" style="font-size:15px;color:var(--label);margin:0">${first
             ? 'Elegí una contraseña para cifrar los datos. Si van a compartir las finanzas en familia, elijan una que conozcan todos: cada teléfono la pide una sola vez.'
             : `Esta cuenta ya tiene datos${env.savedAt ? ' (actualizados el ' + esc(new Date(env.savedAt).toLocaleDateString('es-AR')) + ')' : ''}. Ingresá la contraseña de copias: si te estás sumando a las finanzas de otra persona, es la que eligió ella.`}</p>
+          ${first ? `<div class="banner" style="margin:0">${ICON.warn}<div><strong>¿Te estás sumando a las finanzas de otra persona?</strong> Tocá Cancelar: esta cuenta todavía no tiene datos. Pedile que abra la app en su teléfono (así se suben) y después entrá en Ajustes → Restaurar desde Drive.</div></div>` : ''}
           ${passwordFields(first)}
           ${first ? `<label class="field-group field" style="justify-content:space-between;gap:12px"><span style="font-size:15px">Entiendo que si la olvido, las copias no se pueden recuperar</span><span class="switch"><input type="checkbox" id="pw-ok"><span></span></span></label>
           <p class="footnote" style="margin-top:-8px">Guardala en el administrador de contraseñas del teléfono o anotala en un lugar seguro.</p>` : '<button class="link-btn" id="pw-reset" style="justify-self:start;padding:0;color:var(--expense)">La olvidé: empezar de cero</button>'}`;
@@ -1777,7 +1779,7 @@
           await setVaultKey(await Vault.newKey(p1));
           drive.lastError = null; saveDrive();
           markOnboarded(); closeSheet(); go('movs');
-          if (db.movs.length) scheduleSync(200);
+          scheduleSync(200); // crea el archivo compartido aunque todavía no haya movimientos
           toast('Todo listo. Tocá el micrófono para cargar tu primer movimiento.');
           return;
         }
@@ -1951,7 +1953,7 @@
     const c = $('#drv-connect'); if (c) c.onclick = openDriveConnect;
     const n = $('#drv-now'); if (n) n.onclick = async () => {
       if (drive.lastError === 'reauth') { openDriveConnect(); return; }
-      if (drive.lastError === 'nokey') { ensurePassword(); return; }
+      if (drive.lastError === 'nokey' || !(await getVaultKey())) { ensurePassword(); return; }
       drive.pending = true;
       await syncNow();
       toast(drive.lastError ? driveState().text : 'Copia subida a Drive');
@@ -1982,7 +1984,7 @@
   }
 
   // ---------- Inicio ----------
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.0.1';
   function init() {
     applyTheme();
     $$('.tab').forEach((t) => (t.onclick = () => go(t.dataset.tab)));
