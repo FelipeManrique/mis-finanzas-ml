@@ -815,6 +815,9 @@
         <label class="item"><span class="grow">Letra grande<span class="sub">Agranda textos y botones</span></span><span class="switch"><input type="checkbox" id="set-big" ${st.bigText ? 'checked' : ''}><span></span></span></label>
       </div>
 
+      <h2 class="section-title">Cómo se organiza tu dinero</h2>
+      <div class="list"><button class="item" id="set-guide"><span class="grow">Método 50/30/20<span class="sub">50% necesidades, 30% deseos y 20% ahorro y deudas. Así clasifica la app cada gasto y arma el semáforo.</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg></button></div>
+
       <h2 class="section-title">Categorías y medios</h2>
       <div class="list">
         <button class="item" id="set-cat-g"><span class="grow">Categorías de gastos</span><span class="val">${st.categories.gasto.length}</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg></button>
@@ -835,7 +838,10 @@
         <button class="item danger" id="set-wipe">Borrar todos los datos</button>
       </div>
       <p class="footnote">${db.movs.length} movimientos guardados sólo en este dispositivo y navegador. Última copia: ${esc(last)}. Si borrás los datos del navegador o cambiás de teléfono, los recuperás importando una copia.</p>
-      <p class="footnote" style="text-align:center;margin-top:24px">Mis Finanzas ML · v${APP_VERSION}<br>© 2026 Felipe Manrique. Todos los derechos reservados.<br><a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacidad y condiciones</a></p>`;
+      <h2 class="section-title">Versión</h2>
+      <div class="list"><div class="item"><span class="grow">Mis Finanzas ML<span class="sub" id="set-ver">Versión ${APP_VERSION}</span></span>
+        <button class="btn tinted small" id="set-update">Buscar actualización</button></div></div>
+      <p class="footnote" style="text-align:center;margin-top:24px">© 2026 Felipe Manrique. Todos los derechos reservados.<br><a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacidad y condiciones</a></p>`;
 
     $('#set-lang').onchange = (e) => { st.lang = e.target.value; save(); };
     $('#set-auto').onchange = (e) => { st.autoSave = e.target.checked; save(); };
@@ -856,6 +862,8 @@
     $('#set-import').onclick = () => $('#import-file').click();
     bindDriveSettings();
     $('#set-wipe').onclick = wipeAll;
+    $('#set-update').onclick = (e) => checkUpdate(e.currentTarget);
+    $('#set-guide').onclick = openGuide;
   }
 
   function applyTheme() {
@@ -1983,8 +1991,85 @@
     else if (ui.tab === 'settings') renderSettings();
   }
 
+  // ---------- Guía: el modelo de organización (manual de educación financiera) ----------
+  function openGuide() {
+    const st = S();
+    const cats = (nats) => (st.categories.gasto || []).filter((c) => nats.includes(c.nat || 'necesario')).map((c) => c.name);
+    const list = (arr) => arr.length ? arr.map(esc).join(', ') : '—';
+    const I = (st.plan && +st.plan.ingresos) || 1000000;
+    const ej = st.plan && +st.plan.ingresos ? 'tus ingresos estimados' : 'un ingreso de ejemplo';
+    const block = (pct, color, title, text, items) => `<div class="guide-block" style="--g:${color}">
+        <div class="guide-head"><span class="guide-pct num">${pct}%</span><span><strong>${title}</strong><span class="guide-amt num">${money(Math.round(I * pct / 100))} de ${ej}</span></span></div>
+        <p>${text}</p>${items ? `<p class="guide-cats"><strong>En la app:</strong> ${items}</p>` : ''}</div>`;
+    openSheet({
+      title: 'Método 50/30/20', left: 'Listo', right: '',
+      render(body) {
+        body.innerHTML = `<div class="guide">
+          <p class="guide-lead">Mis Finanzas ML ordena tu dinero como propone el manual de educación financiera: primero conocer la situación, después decidir antes de gastar.</p>
+          <div class="guide-bar" aria-hidden="true"><i style="flex:50;background:var(--accent)"></i><i style="flex:30;background:var(--warn-fill)"></i><i style="flex:20;background:var(--income-fill)"></i></div>
+          ${block(50, 'var(--accent)', 'Necesidades', 'Lo indispensable para vivir y mantener la rutina: no se puede dejar de pagar.', list(cats(['imprescindible', 'necesario'])))}
+          ${block(30, 'var(--warn-fill)', 'Deseos y estilo de vida', 'Lo que mejora el bienestar aunque no sea indispensable. Acá también entran los gastos hormiga.', list(cats(['deseo', 'hormiga'])))}
+          ${block(20, 'var(--income-fill)', 'Ahorro y deudas', 'Lo que se reserva desde el comienzo del mes: fondo de emergencia, metas y pago de deudas.', 'los movimientos de tipo Ahorro y Deuda')}
+          <p class="footnote" style="margin:0">No es una regla obligatoria: es una guía para comparar tu reparto real con uno equilibrado y adaptarlo a tu realidad.</p>
+
+          <h3>Cómo se clasifica cada gasto</h3>
+          <div class="card guide-def">
+            <p><strong>Según su regularidad</strong></p>
+            <p><b>Fijo:</b> se repite todos los meses con un valor parecido (alquiler, servicios, cuotas).</p>
+            <p><b>Variable:</b> cambia según el consumo (alimentos, ropa, salidas).</p>
+            <p><b>Imprevisto:</b> aparece sin aviso (reparaciones, problemas de salud, emergencias).</p>
+          </div>
+          <div class="card guide-def">
+            <p><strong>Según su naturaleza</strong></p>
+            <p><b>Imprescindible:</b> esencial para vivir (alimentación, vivienda, medicamentos).</p>
+            <p><b>Necesario:</b> mejora la calidad de vida y permite trabajar o estudiar (internet, transporte, educación).</p>
+            <p><b>Deseo:</b> mejora el bienestar pero se puede postergar (salidas, ropa, entretenimiento).</p>
+            <p><b>Hormiga:</b> pequeños consumos diarios que sumados pesan (snacks, delivery, suscripciones).</p>
+          </div>
+          <p class="footnote" style="margin:0">Cada categoría trae su clasificación por defecto y se puede cambiar en cada movimiento o en Ajustes → Categorías de gastos.</p>
+
+          <h3>El semáforo financiero</h3>
+          <div class="card guide-def">
+            <p><span class="sem-dot" data-level="verde"></span> <b>Verde:</b> los ingresos cubren todo, ahorrás al menos el 10% y las deudas están controladas.</p>
+            <p><span class="sem-dot" data-level="amarillo"></span> <b>Amarillo:</b> señal de alerta. Ahorro menor al 10%, deudas por encima del 20% de los ingresos, necesidades por encima del 60%, deseos por encima del 35% o gastos hormiga por encima del 10% de los gastos.</p>
+            <p><span class="sem-dot" data-level="rojo"></span> <b>Rojo:</b> hay que tomar decisiones. Los gastos superan a los ingresos o las deudas se llevan más del 35%.</p>
+          </div>
+          <p class="footnote" style="margin:0">“Presupuestar no es limitarnos, es darnos permiso para elegir con conciencia.”</p>
+          <button class="btn" id="g-plan">Armar mi presupuesto con 50/30/20</button>
+        </div>`;
+        $('#g-plan').onclick = editPlan;
+      }
+    });
+  }
+
+  // ---------- Buscar actualización ----------
+  // Compara la versión publicada con la instalada; si hay una nueva, renueva los archivos y recarga.
+  async function checkUpdate(btn) {
+    const reset = () => { btn.disabled = false; btn.textContent = 'Buscar actualización'; };
+    btn.disabled = true; btn.textContent = 'Buscando…';
+    try {
+      const txt = await (await fetch('app.js?t=' + Date.now(), { cache: 'no-store' })).text();
+      const remote = (txt.match(/const APP_VERSION = '(\d[\w.-]*)'/) || [])[1];
+      if (!remote) throw new Error('sin versión');
+      if (remote === APP_VERSION) { reset(); toast(`Ya tenés la última versión (${APP_VERSION})`); return; }
+      btn.textContent = 'Actualizando…';
+      const files = ['./', 'index.html', 'styles.css', 'parser.js', 'vault.js', 'app.js', 'manifest.webmanifest', 'privacidad.html'];
+      await Promise.all(files.map((f) => fetch(f, { cache: 'reload' }).catch(() => {})));
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((k) => k.startsWith('mf-ml-')).map((k) => caches.delete(k)));
+      }
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update().catch(() => {});
+      toast(`Instalando la versión ${remote}…`);
+      setTimeout(() => location.reload(), 700);
+    } catch (e) {
+      reset(); toast('No pude buscar actualizaciones. Revisá tu conexión a internet.');
+    }
+  }
+
   // ---------- Inicio ----------
-  const APP_VERSION = '1.0.1';
+  const APP_VERSION = '1.1.0';
   function init() {
     applyTheme();
     $$('.tab').forEach((t) => (t.onclick = () => go(t.dataset.tab)));
