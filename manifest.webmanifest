@@ -1,0 +1,53 @@
+{
+  "name": "Mis Finanzas ML",
+  "short_name": "Finanzas ML",
+  "description": "Presupuesto, semáforo financiero, metas y deudas, por voz.",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0E8F7E",
+  "theme_color": "#0E8F7E",
+  "icons": [
+    {
+      "src": "https://felipemanrique.github.io/mis-finanzas-ml/icons/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "https://felipemanrique.github.io/mis-finanzas-ml/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://felipemanrique.github.io/mis-finanzas-ml/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "https://felipemanrique.github.io/mis-finanzas-ml/icons/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    },
+    {
+      "src": "https://felipemanrique.github.io/mis-finanzas-ml/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cargar con la voz",
+      "url": "./?voz=1",
+      "icons": [
+        {
+          "src": "https://felipemanrique.github.io/mis-finanzas-ml/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "id": "/mis-finanzas-ml/"
+}
